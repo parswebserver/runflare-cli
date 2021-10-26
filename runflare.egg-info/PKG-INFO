@@ -1,0 +1,13 @@
+Metadata-Version: 1.1
+Name: runflare
+Version: 1.0.0
+Summary: Official CLI for runflare PaaS
+Home-page: https://github.com/parswebserver/runflare
+Author: RUNFLARE DEVELOPMENT TEAM
+Author-email: parswebserver@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Keywords: PaaS,runflare,Kubernetes
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Topic :: Utilities
