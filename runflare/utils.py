@@ -37,7 +37,7 @@ def draw_box(root_path):
     clear()
     print(f"Scaning {root_path} ...")
     print()
-    print("\t✅ Added      ❌ Ignored")
+    print("\tO Added      X Ignored")
     print(" ---------------------------------------------------------")
     print("| ...")
 
@@ -57,13 +57,13 @@ def dir_to_json(root_path):
                 if not is_ignored:
                     abs_file_path = os.path.join(path, file)
                     current_path.append((file_path,file,"file",get_file_sha(abs_file_path),file_path.replace(".\\", "").replace("\\", "/")))
-                    print(f"| ✅   {file_path}")
+                    print(f"| O   {file_path}")
                     counter +=1
                     if counter == 10:
                         draw_box(root_path)
                         counter = 0
                 else:
-                    print(f"| ❌   {file_path}")
+                    print(f"| X   {file_path}")
                     counter += 1
                     if counter == 10:
                         draw_box(root_path)
@@ -74,13 +74,13 @@ def dir_to_json(root_path):
                 if not is_ignored:
                     abs_dir_path = os.path.join(path, subdir)
                     current_path.append((dir_path,os.path.basename(abs_dir_path),"folder",get_folder_name_hash(abs_dir_path),dir_path.replace(".\\", "").replace("\\", "/")))
-                    print(f"| ✅   {dir_path}")
+                    print(f"| O   {dir_path}")
                     counter += 1
                     if counter == 10:
                         draw_box(root_path)
                         counter = 0
                 else:
-                    print(f"| ❌   {dir_path}")
+                    print(f"| X   {dir_path}")
                     counter += 1
                     if counter == 10:
                         draw_box(root_path)

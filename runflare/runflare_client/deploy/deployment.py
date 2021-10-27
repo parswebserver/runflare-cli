@@ -62,7 +62,7 @@ def deploy(y):
     size = os.path.getsize(project_root + f"/{FOLDER_NAME}/{TAR_NAME}") / 1048576
     status, response = upload(project_root,url,token)
     if status:
-        Adapter.save_last_deploy(project_root + f"/{FOLDER_NAME}/",dir_to_json(project_root))
+        Adapter.save_last_deploy(project_root + f"/{FOLDER_NAME}/",data=new+changed)
         os.remove(project_root + f"/{FOLDER_NAME}/{TAR_NAME}")
         os.remove(project_root + f"/{FOLDER_NAME}/{CHANGES_NAME}")
         result = "\n\n {}Files Successfully Uploaded {:.3f} MB".format(Fore.GREEN + Style.BRIGHT, size)
