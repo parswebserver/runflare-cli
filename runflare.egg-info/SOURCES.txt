@@ -1,5 +1,7 @@
+MANIFEST.in
 README.md
 setup.py
+runflare/.runflare_ignore
 runflare/__init__.py
 runflare/exceptions.py
 runflare/gitignore_parser.py

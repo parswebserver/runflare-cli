@@ -1,8 +1,8 @@
 Metadata-Version: 1.1
 Name: runflare
-Version: 1.0.1
+Version: 1.0.3
 Summary: Official CLI for runflare PaaS
-Home-page: https://github.com/parswebserver/runflare
+Home-page: https://github.com/parswebserver/runflare-cli
 Author: RUNFLARE DEVELOPMENT TEAM
 Author-email: parswebserver@gmail.com
 License: UNKNOWN

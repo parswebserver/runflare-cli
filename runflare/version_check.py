@@ -97,6 +97,6 @@ class Version:
         if latest_version == Version("0"):
             return 0
         if latest_version > current_version:
-            return 1
-        else:
             return 2
+        else:
+            return 1

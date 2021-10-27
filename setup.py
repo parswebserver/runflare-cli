@@ -35,9 +35,9 @@ setup(
         'websockets==10.0',
     ],
     author_email='parswebserver@gmail.com',
-    url='https://github.com/parswebserver/runflare',
+    url='https://github.com/parswebserver/runflare-cli',
     keywords=['PaaS', 'runflare','Kubernetes'],
-    package_data={'': ['.runflare_ignore']},
+    package_data={'.runflare_ignore': ['runflare/.runflare_ignore']},
     include_package_data=True,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
