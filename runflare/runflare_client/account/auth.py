@@ -1,4 +1,4 @@
-from PyInquirer import prompt,style_from_dict,Token
+from runflare import inquirer
 from runflare.utils import clear
 from runflare.runflare_client.requester import Requester
 from runflare.settings import LOGIN_URL
@@ -10,21 +10,13 @@ from colorama import Fore, Style
 def save_token():
     clear()
     credentials = [
-        {
-            'type': 'input',
-            'name': 'email',
-            'message': 'Please enter your email > ',
-
-        },
-        {
-            'type': 'password',
-            'name': 'password',
-            'message': 'Please enter your password > ',
-
-        },
+        inquirer.Text("email", message="Please enter your email > "),
+        inquirer.Password("password", message="Please enter your password > "),
     ]
 
-    credentials = prompt(credentials)
+    credentials = inquirer.prompt(credentials)
+    if not credentials:
+        exit()
     email = credentials['email']
     password = credentials['password']
     data = {'email': email, 'password': password}
@@ -40,14 +32,12 @@ def save_token():
 
 def del_token():
     clear()
-    questions = [
-        {
-            'type': 'confirm',
-            'name': 'exit',
-            'message': 'Do you want to exit?',
-            'default': True,
-        }]
-    questions = prompt(questions)
+
+    questions =[
+        inquirer.Confirm("exit", message="Do you want to exit?"),
+    ]
+
+    questions = inquirer.prompt(questions)
     answer = questions['exit']
     if answer:
         status, message = Adapter.del_token()

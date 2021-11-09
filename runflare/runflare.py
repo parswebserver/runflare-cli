@@ -1,7 +1,7 @@
 import fire
 from .utils import clear
 from runflare.runflare_client.account import save_token,del_token
-from runflare.runflare_client.deploy import deploy
+from runflare.runflare_client.deploy import deploy,reset,reset_all
 from runflare.runflare_client.analyze import log,events
 from runflare.runflare_client.service import stop,start,restart
 from runflare.utils import command_help
@@ -178,6 +178,16 @@ For More Help Enter
         return stop(y)
 
     @staticmethod
+    def reset(all=False):
+        """Delete Deploy Root
+
+        """
+        if all:
+            reset_all()
+        else:
+            return reset()
+
+    @staticmethod
     def version():
         """
 
@@ -191,7 +201,6 @@ For More Help Enter
 
 
 def run():
-
     clear()
     checker = Version.has_new_version()
     if checker:
@@ -208,9 +217,6 @@ def run():
     else:
         print(Fore.RED + " ## Please Check Your Internet Connection ##")
         exit(1)
-
-
-
 
 
 if __name__ == '__main__':

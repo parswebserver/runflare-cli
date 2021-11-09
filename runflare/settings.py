@@ -39,5 +39,5 @@ USER_HOME_PATH = Path.home()
 
 BASE_DIR = Path(__file__)
 
-DEFAULT_IGNORE_FILE = ['/.cloud','/.cloud/']
+DEFAULT_IGNORE_FILE = ['/.cloud/','.cloud/']
 

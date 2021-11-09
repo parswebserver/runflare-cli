@@ -1,7 +1,7 @@
 import sqlite3
 from .base_manager import Data_Manager
 from runflare.settings import USER_HOME_PATH,DATASTORE,FOLDER_NAME
-
+import shutil
 import os
 
 class Sqllite_Manager(Data_Manager):
@@ -40,12 +40,38 @@ class Sqllite_Manager(Data_Manager):
         return True
 
     def create_table(self,conn,table_name,**fields):
+        incomming = list(fields.keys())
         query = self.create_table_query(table_name,**fields)
         cursor = conn.cursor()
         cursor.execute(query)
 
+        check_column = f"SELECT * FROM '{table_name}'"
+        data = cursor.execute(check_column)
+
+        db_column = []
+
+        for column in data.description:
+            if column[0] != "id":
+                db_column.append(column[0])
+        if db_column != incomming:
+            print("Error in Database, Recreating Table")
+            query = self.drop_table_query(table_name)
+            cursor.execute(query)
+
+            query = self.create_table_query(table_name, **fields)
+            cursor.execute(query)
+
     def insert_into(self,conn,table_name,**fields):
         query,params = self.insert_into_query(table_name, **fields)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(query, params)
+            return True
+        except:
+            return False
+
+    def delete_row(self,conn,table_name,**fields):
+        query,params = self.delete_query(table_name, **fields)
         cursor = conn.cursor()
         cursor.execute(query, params)
 
@@ -53,8 +79,6 @@ class Sqllite_Manager(Data_Manager):
         query = self.drop_table_query(table_name)
         cursor = conn.cursor()
         cursor.execute(query)
-
-
 
 
     def save_token(self,token,email):
@@ -96,8 +120,6 @@ class Sqllite_Manager(Data_Manager):
         else:
             return False,"Please Login First"
 
-
-
     @property
     def get_project_root(self):
         current_path = os.getcwd()
@@ -107,6 +129,48 @@ class Sqllite_Manager(Data_Manager):
                 return root[1]
         self.save_project_root(current_path)
         return current_path
+
+    def get_roots(self):
+        if os.path.exists(self.main_db_path + self.db_name):
+            self.conn = self.create_connection(self.main_db_path, self.db_name)
+            self.cursor = self.conn.cursor()
+
+            if not self.check_table_exists(self.conn, "Roots"):
+                return False, []
+            query = "SELECT * FROM Roots;"
+            self.cursor.execute(query)
+            result = self.cursor.fetchall()
+            self.close_connection(self.conn)
+            return True, result
+        else:
+            return False, []
+
+    def delete_roots(self,roots):
+        self.conn = self.create_connection(self.main_db_path, self.db_name)
+        self.cursor = self.conn.cursor()
+        query = 'DELETE FROM `Roots` WHERE `root` IN ('
+        for i,root in enumerate(roots):
+            try:
+                path = f"{root}/{FOLDER_NAME}"
+                if os.path.exists(path):
+                    shutil.rmtree(path)
+            except Exception as e:
+                print(e)
+            if not i:
+                query += f"'{root}'"
+            else:
+                query += f" ,'{root}'"
+
+        query += ");"
+        self.cursor.execute(query)
+        self.close_connection(self.conn)
+
+    def save_project_root(self,root):
+        self.conn = self.create_connection(self.main_db_path, self.db_name)
+        self.cursor = self.conn.cursor()
+        self.create_table(self.conn, "Roots", root="VARCHAR(255)")
+        self.insert_into(self.conn, "Roots",root=root)
+        self.close_connection(self.conn)
 
     @property
     def get_project_roots(self):
@@ -123,14 +187,6 @@ class Sqllite_Manager(Data_Manager):
             return True, result
         else:
             return False, []
-
-    def save_project_root(self,root):
-        self.conn = self.create_connection(self.main_db_path, self.db_name)
-        self.cursor = self.conn.cursor()
-        self.create_table(self.conn, "Roots", root="VARCHAR(255)")
-        self.insert_into(self.conn, "Roots",root=root)
-        self.close_connection(self.conn)
-
 
     def get_project_cache(self,local_db_path):
         if os.path.exists(local_db_path + self.db_name):
@@ -152,6 +208,10 @@ class Sqllite_Manager(Data_Manager):
         else:
             return 0, []
 
+    def execute(self,conn,query):
+        self.cursor = conn.cursor()
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
     def save_project_cache(self,local_db_path,project,project_id,item,item_id):
 
         self.conn = self.create_connection(local_db_path, self.db_name)
@@ -169,7 +229,7 @@ class Sqllite_Manager(Data_Manager):
             if not self.check_table_exists(self.conn, "Last_Deploy"):
                 return False, []
 
-            query = "SELECT `path`,`name`,`item_type`,`sha`,`path2` FROM last_deploy;"
+            query = "SELECT `path`,`name`,`item_type`,`sha`,`path2`, FROM last_deploy;"
 
             self.cursor.execute(query)
             result = self.cursor.fetchall()
@@ -178,19 +238,68 @@ class Sqllite_Manager(Data_Manager):
         else:
             return False, []
 
-    def save_last_deploy(self,local_db_path,data):
+    def get_timestamp(self,local_db_path,**kwargs):
+        if os.path.exists(local_db_path + self.db_name):
+            self.conn = self.create_connection(local_db_path, self.db_name)
+            self.cursor = self.conn.cursor()
+
+            if not self.check_table_exists(self.conn, "Last_Deploy"):
+                return None
+
+            query = self.filtered_query("Last_Deploy",**kwargs)
+            self.cursor.execute(query)
+            result = self.cursor.fetchall()
+            if not result:
+                return None
+            self.close_connection(self.conn)
+            return result[0][-1],result[0][4]
+        else:
+
+            return None
+
+    def save_last_deploy(self,local_db_path):
         self.conn = self.create_connection(local_db_path, self.db_name)
         self.cursor = self.conn.cursor()
-        self.drop_table(self.conn, "Last_Deploy")
-        self.create_table(self.conn, "Last_Deploy", path="VARCHAR(255)", name="VARCHAR(255)", item_type="VARCHAR(255)",sha="VARCHAR(255)",path2="VARCHAR(255)")
-        for item in data:
-            self.insert_into(self.conn, "Last_Deploy", path=item[0], name=item[1], item_type=item[2],sha=item[3],path2=item[4])
+        self.drop_table(self.conn, "last_deploy")
+        query = "ALTER TABLE Current_Dir RENAME TO last_deploy;"
+        self.cursor.execute(query)
         self.close_connection(self.conn)
 
+    def save_current_dir(self,conn,data):
+        self.conn = conn
+        self.cursor = self.conn.cursor()
+        self.drop_table(self.conn, "Current_Dir")
+        self.create_table(self.conn, "Current_Dir", path="VARCHAR(255)", name="VARCHAR(255)",sha="VARCHAR(255)",path2="VARCHAR(255)")
+        self.insert_into(self.conn, "Current_Dir", path=data[0], name=data[1],sha=data[2],path2=data[3])
 
+    def compare(self,local_db_path):
+        self.conn = self.create_connection(local_db_path, self.db_name)
+        self.cursor = self.conn.cursor()
+        if not self.check_table_exists(self.conn, "last_deploy"):
+            query = "SELECT DISTINCT path2,type FROM Current_Dir"
+            self.cursor.execute(query)
+            new = self.cursor.fetchall()
+            return new,[],[]
+        try:
+            query = "SELECT DISTINCT path2,type FROM Current_Dir WHERE path NOT IN (SELECT DISTINCT path FROM last_deploy)"
+            self.cursor.execute(query)
+            new = self.cursor.fetchall()
+            query = "SELECT DISTINCT path2,type FROM last_deploy WHERE path NOT IN (SELECT DISTINCT path FROM Current_Dir)"
+            self.cursor.execute(query)
+            delete = self.cursor.fetchall()
+            query = "SELECT DISTINCT path2,type FROM Current_Dir WHERE path IN (SELECT DISTINCT path FROM last_deploy) AND sha NOT IN (SELECT DISTINCT sha FROM last_deploy)"
+            self.cursor.execute(query)
+            change = self.cursor.fetchall()
+        except:
+            print("Error in Database resending all files")
+            query = "SELECT DISTINCT path2,type FROM Current_Dir"
+            self.cursor.execute(query)
+            new = self.cursor.fetchall()
+            return new, [], []
 
+        self.close_connection(self.conn)
 
-
+        return new, change, delete
 
     def filtered_query(self,table_name,**filter):
         query = f'SELECT * FROM `{table_name}` '

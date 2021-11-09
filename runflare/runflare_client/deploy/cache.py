@@ -1,7 +1,7 @@
+from runflare import inquirer
 from runflare.runflare_client.data_manager.adapter import Adapter
 from runflare.runflare_client.service.projects import get_projects, get_project_items
 from runflare.settings import FOLDER_NAME
-from PyInquirer import prompt,style_from_dict,Token,Separator
 from colorama import init,Fore,Style
 from runflare.utils import clear
 
@@ -32,13 +32,11 @@ class Cache_Manager:
         if status == 3:
             if not y:
                 questions = [
-                            {
-                                'type': 'confirm',
-                                'name': 'cache',
-                                'message': 'Do you want to {} {}?'.format(self.type,data[0]),
-                                'default': False,
-                            }]
-                questions = prompt(questions)
+                    inquirer.Confirm("cache", message='Do you want to {} {}?'.format(self.type,data[0])),
+                ]
+                questions = inquirer.prompt(questions)
+                if not questions:
+                    exit()
                 answer = questions['cache']
                 if answer:
                     return False, self.update_item(data)
@@ -51,21 +49,16 @@ class Cache_Manager:
             if not y:
                 if self.type == "Watch Events":
                     questions = [
-                        {
-                            'type': 'confirm',
-                            'name': 'cache',
-                            'message': 'Do you want to Watch Events of {} ?'.format(self.selected_project),
-                            'default': False,
-                        }]
+                        inquirer.Confirm("cache", message='Do you want to Watch Events of {} ?'.format(self.selected_project)),
+                    ]
                 else:
                     questions = [
-                                {
-                                    'type': 'confirm',
-                                    'name': 'cache',
-                                    'message': 'Do you want to {} {} -> {} ?'.format(self.type, self.selected_project, self.selected_item),
-                                    'default': False,
-                                }]
-                questions = prompt(questions)
+                        inquirer.Confirm("cache",
+                                         message='Do you want to {} {} -> {} ?'.format(self.type, self.selected_project, self.selected_item)),
+                    ]
+                questions = inquirer.prompt(questions)
+                if not questions:
+                    exit()
                 answer = questions['cache']
                 if answer:
                     status = False
@@ -90,24 +83,20 @@ class Cache_Manager:
         else:
             return response
         if self.type != "Watch Events":
-
             if self.type != "Deploy":
-                item_type_prompt = [{
-                    'type': 'list',
-                    'name': 'item_type',
-                    'message': 'Services or Databases?',
-                    'choices': ['Service', 'Database'],
-                }]
+                item_type_prompt = [
+                    inquirer.List(
+                        "item_type",
+                        message='Services or Databases?',
+                        choices=['Service', 'Database'],
+                    ),
+                ]
+                answer = inquirer.prompt(item_type_prompt)
+                if not answer:
+                    exit()
+                selected_item_type = answer["item_type"]
             else:
-                item_type_prompt = [{
-                    'type': 'list',
-                    'name': 'item_type',
-                    'message': 'Services?',
-                    'choices': ['Service'],
-                }]
-            answer = prompt(item_type_prompt)
-            selected_item_type = answer["item_type"]
-
+                selected_item_type = "Service"
             choices = []
             item_info = dict()
             if selected_item_type == "Service":
@@ -129,14 +118,17 @@ class Cache_Manager:
                     print(Fore.RED + "This Project doesn't have any `Database`")
                     exit()
 
-            services_prompt = [{
-                'type': 'list',
-                'name': 'service',
-                'message': 'Select an item?',
-                'choices': choices
-            }]
+            services_prompt = [
+                inquirer.List(
+                    "service",
+                    message='Select an item?',
+                    choices=choices,
+                ),
+            ]
             print()
-            answer = prompt(services_prompt)
+            answer = inquirer.prompt(services_prompt)
+            if not answer:
+                exit()
             selected_service = answer["service"]
             selected_service_id = item_info[selected_service]
         else:
@@ -160,14 +152,16 @@ class Cache_Manager:
         for project in projects:
             choices.append(project["namespace"])
 
-        projects_prompt = [{
-            'type': 'list',
-            'name': 'project',
-            'message': 'Select a project?',
-            'choices': choices
-        }]
+        projects_prompt = [
+            inquirer.List(
+                "project",
+                message='Select a project?',
+                choices=choices,
+            )]
         clear()
-        answer = prompt(projects_prompt)
+        answer = inquirer.prompt(projects_prompt)
+        if not answer:
+            exit()
         selected_project = answer["project"]
 
         for project in projects:
@@ -186,23 +180,18 @@ class Cache_Manager:
         if self.type != "Watch Events":
 
             if self.type != "Deploy":
-                item_type_prompt = [{
-                    'type': 'list',
-                    'name': 'item_type',
-                    'message': 'Services or Databases?',
-                    'choices': ['Service', 'Database'],
-                }]
+                item_type_prompt = [
+                    inquirer.List(
+                        "item_type",
+                        message='Services or Databases?',
+                        choices=['Service', 'Database'],
+                    )]
+                answer = inquirer.prompt(item_type_prompt)
+                if not answer:
+                    exit()
+                selected_item_type = answer["item_type"]
             else:
-                item_type_prompt = [{
-                    'type': 'list',
-                    'name': 'item_type',
-                    'message': 'Services?',
-                    'choices': ['Service'],
-                }]
-            print()
-            answer = prompt(item_type_prompt)
-            selected_item_type = answer["item_type"]
-
+                selected_item_type = "Service"
             choices = []
             item_info = dict()
             if selected_item_type == "Service":
@@ -223,15 +212,16 @@ class Cache_Manager:
                 else:
                     print(Fore.RED + "This Project doesn't have any `Database`")
                     exit()
-
-            services_prompt = [{
-                'type': 'list',
-                'name': 'service',
-                'message': 'Select an item?',
-                'choices': choices
-            }]
+            services_prompt = [
+                inquirer.List(
+                    "service",
+                    message='Select an item?',
+                    choices=choices,
+                )]
             print()
-            answer = prompt(services_prompt)
+            answer = inquirer.prompt(services_prompt)
+            if not answer:
+                exit()
             selected_service = answer["service"]
             selected_service_id = item_info[selected_service]
         else:

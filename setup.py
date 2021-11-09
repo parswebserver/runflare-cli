@@ -1,5 +1,5 @@
 from distutils.core import setup
-
+import os
 import setuptools
 
 from runflare import VERSION
@@ -18,9 +18,10 @@ setup(
         'halo==0.0.31',
         'idna==3.2',
         'log-symbols==0.0.14',
-        'prompt-toolkit==1.0.14',
         'Pygments==2.10.0',
-        'PyInquirer==1.0.3',
+        "blessed==1.19.0",
+        'readchar==2.0.1',
+        'python-editor==1.0.4',
         'pytz==2021.3',
         'regex==2021.10.8',
         'requests==2.26.0',
@@ -47,5 +48,4 @@ setup(
         [console_scripts]
         runflare=runflare.runflare:run
     ''',
-
 )

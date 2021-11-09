@@ -1,11 +1,14 @@
+import fnmatch
 import os
 import tarfile
 import hashlib
 from runflare.gitignore_parser import parse_gitignore
 from runflare.runflare_client.data_manager.adapter import Adapter
-from runflare.settings import FOLDER_NAME, TAR_NAME
+from runflare.settings import FOLDER_NAME, TAR_NAME,DATASTORE,DEFAULT_IGNORE_FILE
 from colorama import Style
-
+from halo import Halo
+from pathlib import Path
+import copy
 
 
 def makedirs(path):
@@ -18,109 +21,61 @@ def clear():
     else:
         os.system("clear")
 
-
 def get_current_path():
     return os.getcwd()
 
-def get_file_sha(file):
-    sha1_hash = hashlib.sha1()
-    with open(file, "rb") as f:
-        for byte_block in iter(lambda: f.read(4096), b""):
-            sha1_hash.update(byte_block)
-        return sha1_hash.hexdigest()
-
-def get_folder_name_hash(path):
-    result = hashlib.sha1(path.encode())
+def get_text_hash(text):
+    result = hashlib.sha1(text.encode())
     return result.hexdigest()
 
-def draw_box(root_path):
-    clear()
-    print(f"Scaning {root_path} ...")
-    print()
-    print("\tO Added      X Ignored")
-    print(" ---------------------------------------------------------")
-    print("| ...")
-
-
-def dir_to_json(root_path):
-    relative_path = os.path.relpath(root_path, ".")
-    current_path = []
-    matches = parse_gitignore('.gitignore',base_dir=relative_path)
-    draw_box(root_path)
-    counter = 0
+@Halo(text=Style.BRIGHT + "Scaning Directory", color="magenta")
+def save_current_dir(root_path,file_exclude,folder_exclude):
+    conn = Adapter.create_connection(root_path + f"/{FOLDER_NAME}/",DATASTORE.get("NAME"))
+    Adapter.drop_table(conn,"Current_Dir")
+    Adapter.create_table(conn,"Current_Dir", path="VARCHAR(255)",type="VARCHAR(255)",sha="VARCHAR(255)",path2="VARCHAR(255)")
     for path, subdirs, files in os.walk(root_path):
-        is_ignored = matches(path)
-        if not is_ignored:
-            for file in files:
-                is_ignored = matches(os.path.join(path, file))
+        subdirs[:] = [d for d in subdirs if d not in folder_exclude]
+        for file in files:
+            is_ignored = False
+            for e in file_exclude:
+                if fnmatch.fnmatch(file, e):
+                    is_ignored = True
+                    break
+            if not is_ignored:
                 file_path = os.path.join(path, file).replace(root_path, ".")
-                if not is_ignored:
-                    abs_file_path = os.path.join(path, file)
-                    current_path.append((file_path,file,"file",get_file_sha(abs_file_path),file_path.replace(".\\", "").replace("\\", "/")))
-                    print(f"| O   {file_path}")
-                    counter +=1
-                    if counter == 10:
-                        draw_box(root_path)
-                        counter = 0
-                else:
-                    print(f"| X   {file_path}")
-                    counter += 1
-                    if counter == 10:
-                        draw_box(root_path)
-                        counter = 0
-            for subdir in subdirs:
-                is_ignored = matches(os.path.join(path, subdir))
-                dir_path = os.path.join(path, subdir).replace(root_path, ".")
-                if not is_ignored:
-                    abs_dir_path = os.path.join(path, subdir)
-                    current_path.append((dir_path,os.path.basename(abs_dir_path),"folder",get_folder_name_hash(abs_dir_path),dir_path.replace(".\\", "").replace("\\", "/")))
-                    print(f"| O   {dir_path}")
-                    counter += 1
-                    if counter == 10:
-                        draw_box(root_path)
-                        counter = 0
-                else:
-                    print(f"| X   {dir_path}")
-                    counter += 1
-                    if counter == 10:
-                        draw_box(root_path)
-                        counter = 0
-    print(" ---------------------------------------------------------")
-    return current_path
+                abs_file_path = os.path.join(path, file)
+                status = os.stat(abs_file_path)
+                Adapter.insert_into(conn,"Current_Dir",path=file_path, type="file",sha=get_text_hash(str(abs_file_path) + str(status.st_size) + str(status.st_ctime) + str(status.st_mtime)), path2=file_path.replace(".\\", "").replace("\\", "/"))
+
+        for subdir in subdirs:
+            dir_path = os.path.join(path, subdir).replace(root_path, ".")
+            abs_dir_path = os.path.join(path, subdir)
+            status = os.stat(abs_dir_path)
+            Adapter.insert_into(conn,"Current_Dir",path=dir_path, type="folder",sha=get_text_hash(str(abs_dir_path) + str(status.st_size) + str(status.st_ctime) + str(status.st_mtime)), path2=dir_path.replace(".\\", "").replace("\\", "/"))
+
+    file_number = Adapter.execute(conn,'SELECT Count(*) FROM Current_Dir;')
+    Adapter.close_connection(conn)
+    return file_number[0][0]
 
 def compare(project_root):
-    files = dir_to_json(project_root)
-    found,last_deploy = Adapter.get_last_deploy(project_root + f"/{FOLDER_NAME}/")
-    if not found:
-        return files,[],[]
-    changed = []
-    new = []
-    deleted = []
+    file_exclude, folder_exclude = get_ignore(project_root)
+    file_number = save_current_dir(project_root,file_exclude, folder_exclude)
+    new,change,delete = Adapter.compare(project_root + f"/{FOLDER_NAME}/")
 
-
-    for new_file in files:
-
-        flag = False
-        if new_file not in last_deploy:
-            for old_file in last_deploy:
-                if new_file[0] == old_file[0]:
-                    changed.append(new_file)
-                    flag = True
-                    break
-            if not flag:
-                new.append(new_file)
-
-    for old in last_deploy:
-        if len(changed) != 0:
-            for item in changed:
-                if item[0] == old[0]:
-                    continue
-                if old not in files:
-                    deleted.append(old)
-        else:
-            if old not in files:
-                deleted.append(old)
-    return new, changed, deleted
+    tmp = copy.copy(delete)
+    for e in file_exclude:
+        for item in delete:
+            if "/" in item[0]:
+                name = item[0].split("/")[-1]
+            else:
+                name = item[0]
+            if item[1] == 'file' and fnmatch.fnmatch(name, e):
+                tmp.remove(item)
+    for e in folder_exclude:
+        for item in delete:
+            if item[1] == 'folder' and e in item[0]:
+                tmp.remove(item)
+    return new,change,tmp,file_number
 
 
 def make_tar(project_root,changed, new):
@@ -129,10 +84,10 @@ def make_tar(project_root,changed, new):
         for name in changed:
             tar.add(name[0])
         for item in new:
-            if item[2] == "file":
+            if item[1] == "file":
                 tar.add(item[0])
             else:
-                t = tarfile.TarInfo(item[4])
+                t = tarfile.TarInfo(item[0])
                 t.type = tarfile.DIRTYPE
                 status = os.stat(item[0])
                 t.mtime = status.st_mtime
@@ -140,17 +95,11 @@ def make_tar(project_root,changed, new):
                 t.uid = status.st_uid
                 tar.addfile(t)
 
-
-
 def list_to_dict(data):
     lst = []
     for item in data:
         lst.append({
-            "path": item[0],
-            "name": item[1],
-            "type": item[2],
-            "sha": item[3],
-            "path2": item[4],
+            "path2": item[0],
         })
     return lst
 
@@ -159,3 +108,37 @@ def command_help(command, **kwargs):
         clear()
         print("runflare {} <option>\n\nOPTIONS".format(command))
         print("\t-{},--{} \t\t {}".format(key, key, value))
+
+def stripn(n):
+    n = n.strip("\n")
+    if not n.startswith("#"):
+        return n
+
+def ignore_parser(ig_list):
+    lst = set(map(stripn,ig_list))
+    file = []
+    folder = []
+    for i in lst:
+        if i:
+            if i.endswith("/"):
+                if not "*" in i:
+                    folder.append(i.rstrip("/"))
+            else:
+                file.append(i)
+
+    return file,folder
+
+def get_ignore(project_root):
+    if not os.path.exists(project_root + "/.gitignore"):
+        full_path = str(Path(__file__).resolve().parent / ".runflare_ignore")
+    else:
+        full_path = project_root + "/.gitignore"
+        with open(full_path, "r+") as default_ignored:
+            lst = list(map(lambda x: x.strip("\n"),default_ignored.readlines()))
+            for item in DEFAULT_IGNORE_FILE:
+                if item not in lst:
+                    default_ignored.write(f"{item}\n")
+
+    with open(full_path) as ignored:
+        ig = ignored.readlines()
+    return ignore_parser(ig)
