@@ -20,7 +20,6 @@ def save_token():
     email = credentials['email']
     password = credentials['password']
     data = {'email': email, 'password': password}
-
     request = Requester("POST",LOGIN_URL,data=data)
     status,response = request.get_response
     if status:
@@ -28,7 +27,8 @@ def save_token():
         Adapter.save_token(token=token, email=email)
         return Fore.GREEN + " Successfully Logged In"
     else:
-        return Fore.RED + " Wrong Credentials"
+        print(Fore.RED + " Wrong Credentials")
+        exit()
 
 def del_token():
     clear()

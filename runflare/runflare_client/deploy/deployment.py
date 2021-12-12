@@ -14,8 +14,9 @@ from runflare.utils import clear, compare, make_tar, list_to_dict, makedirs
 from .cache import Cache_Manager
 from .upload import upload, pre_upload_check, uploader_info
 from runflare.runflare_client.service.manage import restart
-from ...settings import FOLDER_NAME, TAR_NAME, CHANGES_NAME, MAX_TRY, USER_HOME_PATH, RESTART_URL
-
+from ...settings import FOLDER_NAME, TAR_NAME, CHANGES_NAME, MAX_TRY, USER_HOME_PATH, RESTART_URL,LOG_URL
+import sys
+from halo import Halo
 
 def deploy(y):
     project_root = Adapter.get_project_root()
@@ -24,10 +25,20 @@ def deploy(y):
     data = cache_object.cache(y)
     selected_project, selected_service, selected_service_id = data[1], data[2], data[3]
 
+    sp = Halo(text=Style.BRIGHT + f"Scaning Directory {project_root}", color="magenta")
+    sp.start()
+    new, changed, deleted, scaned_files = compare(project_root)
+    sp.stop()
+    space = " " * len(project_root)
+    sys.stdout.write(f"\r √  Scaned {scaned_files} item(s)    {space}\n")
+
+    if not new and not deleted and not changed:
+        print(Fore.RED + "No New Files\nDirectory already synced with server !")
+        exit()
     try_num = 1
+    sp = Halo(text=Style.BRIGHT + f"Checking Upload Conditions", color="magenta")
+    sp.start()
     while try_num <= MAX_TRY:
-        clear()
-        print(Style.BRIGHT + f"Uploading Try ({try_num}/{MAX_TRY})")
         status, response = uploader_info(selected_service_id)
         if "401" in response:
             return Fore.RED + response
@@ -37,40 +48,47 @@ def deploy(y):
         sleep(2)
     if not status:
         return Fore.RED + response
+    sp.stop()
+    sys.stdout.write(f"\r √  Upload Conditions Verified\n")
+
+
 
     url = response.json().get("url")
     token = response.json().get("token")
     free_disk = response.json().get("free_disk")
-    restart = response.json().get("restart")
+    restart_value = response.json().get("restart")
 
     status, response = pre_upload_check(url, token)
     if not status:
         return Fore.RED + response
-    clear()
-    print(Style.BRIGHT + f"Scaning {project_root} ...")
-    new, changed, deleted, scaned_files = compare(project_root)
-    print(Fore.GREEN + Style.BRIGHT + "Scan Finished")
-    if not new and not deleted and not changed:
-        print(Fore.RED + "No New Files\nDirectory already synced with server !")
-        exit()
+
+
 
     makedirs(project_root + f"/{FOLDER_NAME}/")
-    with open(project_root + f"/{FOLDER_NAME}/{CHANGES_NAME}", "w+") as changes:
+    changes_file_path = project_root + f"/{FOLDER_NAME}/{CHANGES_NAME}"
+    with open(changes_file_path, "w+") as changes:
         changes.write(json.dumps({
             "new": list_to_dict(new),
             "modify": list_to_dict(changed),
             "delete": list_to_dict(deleted)
         }, indent=4))
 
-    print(Style.BRIGHT + "Start Compressing")
-    make_tar(project_root, changed, new)
-    print(Fore.GREEN + Style.BRIGHT + "Compressing Finished")
+    number_of_files = len(changed) + len(new)
+    sp = Halo(text=Style.BRIGHT + f"Compressing 0 of {number_of_files} item(s)", color="magenta")
+    sp.start()
+    i = 0
+    for i in make_tar(project_root, changed, new,changes_file_path=changes_file_path):
+        sp.text = (Style.BRIGHT + f"Compressing {str(i)} of {number_of_files} items")
+    sp.stop()
+    space = " " * len(str(number_of_files) + str(i))
+    sys.stdout.write(f"\r √  Compressed {number_of_files} item(s)    {space}\n")
+
     size = os.path.getsize(project_root + f"/{FOLDER_NAME}/{TAR_NAME}") / 1048576
     if free_disk < size:
         print(Fore.RED + Style.BRIGHT + "Not Enough Disk,Please Upgrade Your Plan")
         exit()
 
-    status, response = upload(project_root, url, token)
+    upload(project_root, url, token)
     if status:
         Adapter.save_last_deploy(project_root + f"/{FOLDER_NAME}/")
         os.remove(project_root + f"/{FOLDER_NAME}/{TAR_NAME}")
@@ -79,15 +97,21 @@ def deploy(y):
         result += "\n\n  Scaned Files :{} \n   {}New Files :{} \n   Changed Files :{} \n   Deleted Files :{}\n".format(
             scaned_files, Fore.GREEN, len(new), len(changed), len(deleted))
         print(result)
-        action = "ON" if restart else "OFF"
+        action = "ON" if restart_value else "OFF"
         print(f"{Fore.GREEN}Auto Restart is {action}")
         print(f"{Fore.GREEN}You Can Change Auto Restart After Deploy Feature, From Runflare.com")
-        print(f"{Fore.GREEN}Deployment takes time, watch log with runflare log -f -y")
-        if restart:
-            request = Requester("PATCH", RESTART_URL.format(data[3]))
-            status, response = request.get_response
-            if not status:
-                return Fore.RED + response
+        if restart_value:
+            Requester("PATCH", RESTART_URL.format(data[3]))
+        questions = [
+            inquirer.Confirm("log", message="Deployment takes time,Do you want to Watch log?"),
+        ]
+
+        questions = inquirer.prompt(questions)
+        answer = questions["log"]
+        if answer:
+            from runflare.runflare_client.web_socket import Socket
+            Socket().run_loop("watch", LOG_URL, data[3])
+
 
     else:
         return Fore.RED + response

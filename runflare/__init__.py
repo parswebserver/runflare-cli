@@ -1,4 +1,4 @@
-VERSION = "1.0.5"
+VERSION = "1.0.8"
 NAME = "runflare_cli"
 
 if __name__ == "__main__":

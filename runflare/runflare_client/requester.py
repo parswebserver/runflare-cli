@@ -1,25 +1,27 @@
-import urllib
 import requests
 from runflare.runflare_client.data_manager.adapter import Adapter
 from runflare.settings import BASE_URL
-from colorama import init, Fore
+from colorama import Fore
+import json
 
 class Requester:
 
-    def __init__(self,method,path,abs=False,**kwargs):
+    def __init__(self,method,path,spinner=None,abs=False,**kwargs):
 
         assert method in ["HEAD", "GET", "POST", "PATCH", "PUT", "DELETE"],(f"{path} method is not allowed")
         assert path is not None,("Enter a valid Path")
-
+        self.method = method
         if not "headers" in kwargs:
             kwargs["headers"] = {}
         kwargs["headers"]["Authorization"] = f"Token {self._get_token()}"
+        self.kwargs = kwargs
+        self.spinner = spinner
         if not abs:
-            url = BASE_URL + path
+            self.url = BASE_URL + path
         else:
-            url = path
+            self.url = path
         try:
-            self.response = requests.request(method,url,**kwargs)
+            self.response = requests.request(self.method,self.url,**self.kwargs)
         except Exception as e:
             print()
             print(Fore.RED + "Error in Making Request")
@@ -27,6 +29,18 @@ class Requester:
             exit()
 
     def __check(self):
+        if self.response.status_code == 401:
+            from runflare.runflare_client.account import save_token
+            if self.spinner:
+                self.spinner.stop()
+            save_token()
+            if self.spinner:
+                self.spinner.start()
+            self.kwargs["headers"]["Authorization"] = f"Token {self._get_token()}"
+            self.response = requests.request(self.method, self.url, **self.kwargs)
+            self.__check()
+            if self.spinner:
+                self.spinner.stop()
         if self.response.status_code != 200:
             return False,self.__Return_Error()
         self.json_data = self.response.json()
@@ -38,14 +52,16 @@ class Requester:
 
 
     def __Return_Error(self):
-        if self.response.status_code == 401:
-            return Fore.RED + f"(401) - Please Login To Your Runflare Account"
         if self.response.status_code == 400:
-            return Fore.RED + f"(400) - Please Contact Support"
+            print(Fore.RED + f"(400) - Please Contact Support")
+            exit()
         if self.response.status_code == 500:
-            return Fore.RED + f"(500) - Please Contact Support"
+            print(Fore.RED + f"(500) - Please Contact Support")
+            exit()
         else:
-            return Fore.RED + f"({self.response.status_code}) - Invalid Request"
+            print(Fore.RED + f"({self.response.status_code}) - Invalid Request")
+            exit()
+
 
 
     def _get_token(self):
@@ -58,4 +74,3 @@ class Requester:
     @property
     def get_response(self):
         return self.__check()
-

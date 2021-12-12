@@ -4,9 +4,11 @@ from colorama import Fore, Style
 from halo import Halo
 
 
-@Halo(text=Style.BRIGHT + "Getting Projects List...", color="magenta")
+spinner = Halo(text=Style.BRIGHT + "Getting Projects List...", color="magenta")
 def get_projects():
-    request = Requester("GET", PROJECT_LIST_URL)
+    spinner.start()
+    request = Requester("GET", PROJECT_LIST_URL,spinner=spinner)
+    spinner.stop()
     return request.get_response
 
 

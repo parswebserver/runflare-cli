@@ -73,7 +73,9 @@ class RunFlare():
 {bold_start}Stop Project:{bold_stop}
    runflare stop
    runflare stop -y\tUse previous item id to Stop project
-    
+{bold_start}Reset Deploy Root:{bold_stop}
+   runflare reset \tSelect And Delete root
+   runflare reset --all\tDelete all available deploy root
 For More Help Enter
     runflare COMMAND help    
     

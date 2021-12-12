@@ -140,7 +140,7 @@ class Cache_Manager:
     def update_cache(self):
         status, response = get_projects()
         if status:
-            projects = response.json()
+            projects = response.json().get("projects",[])
         else:
             return Fore.RED + response
 

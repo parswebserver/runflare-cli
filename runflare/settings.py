@@ -13,7 +13,7 @@ TAR_NAME = "workspace.tar.gz"
 CHANGES_NAME = "changes.json"
 
 LOGIN_URL = '/account/login/'
-PROJECT_LIST_URL = '/project/'
+PROJECT_LIST_URL = '/project/?filter=ACTIVE'
 ITEM_LIST_URL = '/project/items-show/{}/'
 UPLOAD_URL = "/project/deploy/{}/"
 START_URL = "/project/deployment-start/{}/"
@@ -39,5 +39,7 @@ USER_HOME_PATH = Path.home()
 
 BASE_DIR = Path(__file__)
 
-DEFAULT_IGNORE_FILE = ['/.cloud/','.cloud/']
+DEFAULT_IGNORE_FILE = ['/.cloud/','.cloud/','/.cloud']
+
+FORCE_IGNORE = ['node_modules','vendor']
 
