@@ -86,14 +86,14 @@ For More Help Enter
         return self._help()
 
     @staticmethod
-    def login():
+    def login(email=None,password=None):
         """
 
         Enter Your Username and Password To login Securly
 
         """
 
-        return save_token()
+        return save_token(email,password)
 
     @staticmethod
     def logout():
@@ -103,7 +103,7 @@ For More Help Enter
         return del_token()
 
     @staticmethod
-    def deploy(y=False,help=False):
+    def deploy(email=None,password=None,namespace=None,app=None,y=False,help=False):
         """Deploy your project form local to cloud
 
         runflare deploy
@@ -113,7 +113,7 @@ For More Help Enter
         if help:
             command_help(command="deploy", y="use cached service id to deploy project")
             exit()
-        return deploy(y=y)
+        return deploy(email=email,password=password,namespace=namespace,app=app,y=y)
 
     @staticmethod
     def logs(f=False, y=False, help=False):

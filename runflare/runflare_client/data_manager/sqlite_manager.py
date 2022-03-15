@@ -1,6 +1,7 @@
 import sqlite3
 from .base_manager import Data_Manager
 from runflare.settings import USER_HOME_PATH,DATASTORE,FOLDER_NAME
+from runflare.runflare_client.custom_pathlib import Path
 import shutil
 import os
 
@@ -122,11 +123,13 @@ class Sqllite_Manager(Data_Manager):
 
     @property
     def get_project_root(self):
-        current_path = os.getcwd()
+        current_path = Path(os.getcwd())
         _,roots = self.get_project_roots
-        for root in roots:
-            if root[1] in current_path:
-                return root[1]
+        root_path_object = (Path(root[1]) for root in roots)
+        for root in root_path_object:
+            if current_path.is_relative_to(root):
+                return str(root)
+        current_path = str(current_path)
         self.save_project_root(current_path)
         return current_path
 

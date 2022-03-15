@@ -1,7 +1,7 @@
 from runflare import inquirer
 from runflare.runflare_client.data_manager.adapter import Adapter
 from runflare.runflare_client.service.projects import get_projects, get_project_items
-from runflare.settings import FOLDER_NAME
+from runflare.settings import FOLDER_NAME,DOC_URL
 from colorama import init,Fore,Style
 from runflare.utils import clear
 
@@ -18,10 +18,12 @@ class Cache_Manager:
         self.local_db_path = self.root + f"/{FOLDER_NAME}/"
 
 
-    def cache(self,y):
-        required,data = self.get_cache(y)
+    def cache(self,y,email=None,password=None,namespace=None,app=None):
+        required = True
+        if not namespace and not app:
+            required,data = self.get_cache(y)
         if required:
-            data = self.update_cache()
+            data = self.update_cache(email,password,namespace=namespace,app=app,)
         return data
 
 
@@ -137,8 +139,9 @@ class Cache_Manager:
         self.save_cache(data[0], data[1], selected_service, selected_service_id)
         return data[0], data[1], selected_service, selected_service_id
 
-    def update_cache(self):
-        status, response = get_projects()
+    def update_cache(self,email=None,password=None,namespace=None,app=None):
+
+        status, response = get_projects(email=email,password=password)
         if status:
             projects = response.json().get("projects",[])
         else:
@@ -152,17 +155,20 @@ class Cache_Manager:
         for project in projects:
             choices.append(project["namespace"])
 
-        projects_prompt = [
-            inquirer.List(
-                "project",
-                message='Select a project?',
-                choices=choices,
-            )]
-        clear()
-        answer = inquirer.prompt(projects_prompt)
-        if not answer:
-            exit()
-        selected_project = answer["project"]
+        if not namespace:
+            projects_prompt = [
+                inquirer.List(
+                    "project",
+                    message='Select a project?',
+                    choices=choices,
+                )]
+            clear()
+            answer = inquirer.prompt(projects_prompt)
+            if not answer:
+                exit()
+            selected_project = answer["project"]
+        else:
+            selected_project = namespace
 
         for project in projects:
             if project["namespace"] == selected_project:
@@ -193,36 +199,54 @@ class Cache_Manager:
             else:
                 selected_item_type = "Service"
             choices = []
+            not_active = []
             item_info = dict()
             if selected_item_type == "Service":
                 if service:
                     for item in service:
+                        if item.get("status") != "ACTIVE":
+                            not_active.append(item["name"])
                         choices.append(item["name"])
                         item_info[item["name"]] = item["id"]
 
                 else:
-                    print(Fore.RED + "This Project doesn't have any `Service`")
+                    print(Fore.RED + "Selected Project doesn't have any `Service`")
+                    print(Fore.RED + f"For more help please visit {DOC_URL}")
                     exit()
+
 
             elif selected_item_type == "Database":
                 if database:
                     for item in database:
+                        if item.get("status") != "ACTIVE":
+                            not_active.append(item["name"])
                         choices.append(item["name"])
                         item_info[item["name"]] = item["id"]
                 else:
                     print(Fore.RED + "This Project doesn't have any `Database`")
+                    print(Fore.RED + f"For more help please visit {DOC_URL}")
                     exit()
-            services_prompt = [
-                inquirer.List(
-                    "service",
-                    message='Select an item?',
-                    choices=choices,
-                )]
-            print()
-            answer = inquirer.prompt(services_prompt)
-            if not answer:
-                exit()
-            selected_service = answer["service"]
+            if not app:
+                services_prompt = [
+                    inquirer.List(
+                        "service",
+                        message='Select an item?',
+                        choices=choices,
+                    )]
+                print()
+                answer = inquirer.prompt(services_prompt)
+                if not answer:
+                    exit()
+                selected_service = answer["service"]
+
+                if selected_service in not_active:
+                    print(Fore.RED + f"{selected_service} is not active")
+                    print(Fore.RED + f"For more help please visit {DOC_URL}")
+                    exit()
+
+
+            else:
+                selected_service = app
             selected_service_id = item_info[selected_service]
         else:
             selected_service = None

@@ -2,11 +2,11 @@ import requests
 from runflare.runflare_client.data_manager.adapter import Adapter
 from runflare.settings import BASE_URL
 from colorama import Fore
-import json
+from runflare import inquirer
 
 class Requester:
 
-    def __init__(self,method,path,spinner=None,abs=False,**kwargs):
+    def __init__(self,method,path,spinner=None,abs=False,extra=None,**kwargs):
 
         assert method in ["HEAD", "GET", "POST", "PATCH", "PUT", "DELETE"],(f"{path} method is not allowed")
         assert path is not None,("Enter a valid Path")
@@ -14,6 +14,10 @@ class Requester:
         if not "headers" in kwargs:
             kwargs["headers"] = {}
         kwargs["headers"]["Authorization"] = f"Token {self._get_token()}"
+        if isinstance(extra,dict):
+            self.extra = extra
+        else:
+            self.extra= {}
         self.kwargs = kwargs
         self.spinner = spinner
         if not abs:
@@ -33,7 +37,10 @@ class Requester:
             from runflare.runflare_client.account import save_token
             if self.spinner:
                 self.spinner.stop()
-            save_token()
+
+            email = self.extra.get("email")
+            password = self.extra.get("password")
+            save_token(email,password)
             if self.spinner:
                 self.spinner.start()
             self.kwargs["headers"]["Authorization"] = f"Token {self._get_token()}"
@@ -41,7 +48,22 @@ class Requester:
             self.__check()
             if self.spinner:
                 self.spinner.stop()
-        if self.response.status_code != 200:
+        elif self.response.status_code == 403:
+            credentials = [
+                inquirer.Text("totp", message="Please enter totp > ")
+            ]
+            credentials = inquirer.prompt(credentials)
+            if not credentials:
+                exit()
+            totp = credentials['totp']
+            self.kwargs["data"].update({
+                "totp":totp
+            })
+
+            self.response = requests.request(self.method, self.url,**self.kwargs)
+            self.__check()
+
+        elif self.response.status_code != 200:
             return False,self.__Return_Error()
         self.json_data = self.response.json()
         if isinstance(self.json_data,dict):

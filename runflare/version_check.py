@@ -2,8 +2,9 @@ from runflare import VERSION
 from runflare.runflare_client.requester import Requester
 from runflare.settings import VERSION_URL,BASE_URL
 from halo import Halo
-from colorama import Style
+from colorama import Style,Fore
 import requests
+from runflare.utils import clear
 class Version:
     def __init__(self, version_str):
         self.version_tuple = self._parse_version(version_str)
@@ -76,7 +77,11 @@ class Version:
             request = requests.request("GET", BASE_URL + VERSION_URL)
         except:
             return Version("0")
-        if request.status_code != 200:
+        if request.status_code == 503:
+            clear()
+            print(Fore.RED + f"\nRunflare Is Under Maintance, Please Try Again Later")
+            exit()
+        elif request.status_code != 200:
             return Version("0")
         ok,response = request.ok,request.json()
         if ok:

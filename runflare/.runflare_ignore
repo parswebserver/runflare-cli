@@ -260,8 +260,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-/vendor/
-node_modules/
+
 npm-debug.log
 yarn-error.log
 

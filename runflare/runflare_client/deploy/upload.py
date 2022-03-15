@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import json
+import platform
 import datetime
 from runflare.utils import clear
 
@@ -67,13 +68,24 @@ def upload(project_root,url,token):
                         else:
                             spinner.stop()
                             print(msg)
-                            # sys.stdout.write(f"\r{word}")
                 word = ""
 
 
 
 def uploader_info(item_id):
-    request = Requester("POST", UPLOAD_URL.format(item_id))
+    try:
+        operating_system = platform.platform()
+    except:
+        operating_system = None
+    try:
+        device_name = platform.node()
+    except:
+        device_name = None
+    data = {
+        "operating_system" : operating_system,
+        "device_name" : device_name
+    }
+    request = Requester("POST", UPLOAD_URL.format(item_id),data=data)
     return request.get_response
 
 def pre_upload_check(url,token):

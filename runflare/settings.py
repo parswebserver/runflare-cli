@@ -2,8 +2,8 @@ import platform
 from pathlib import Path
 
 
-BASE_URL = "https://dash.runflare.com"
-WEBSOCKET_URL = 'wss://dash.runflare.com'
+BASE_URL = "https://api.runflare.com"
+WEBSOCKET_URL = 'wss://api.runflare.com'
 FOLDER_NAME = ".cloud"
 DATASTORE = {
     "BACKEND": "sqlite3",
@@ -25,6 +25,9 @@ VERSION_URL = "/version/"
 NR_LOG_URL = "/project/pod-log/{}/"
 NR_EVENTS_URL = '/project/events/{}/'
 
+
+DOC_URL = 'https://runflare.com/docs/get-started/'
+
 MAX_TRY = 3
 
 LOG_URL = "pod-log"
@@ -40,6 +43,4 @@ USER_HOME_PATH = Path.home()
 BASE_DIR = Path(__file__)
 
 DEFAULT_IGNORE_FILE = ['/.cloud/','.cloud/','/.cloud']
-
-FORCE_IGNORE = ['node_modules','vendor']
 

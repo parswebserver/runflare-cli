@@ -7,21 +7,23 @@ from runflare.runflare_client.data_manager.adapter import Adapter
 from colorama import Fore, Style
 
 
-def save_token():
-    clear()
-    credentials = [
-        inquirer.Text("email", message="Please enter your email > "),
-        inquirer.Password("password", message="Please enter your password > "),
-    ]
+def save_token(email=None,password=None):
 
-    credentials = inquirer.prompt(credentials)
-    if not credentials:
-        exit()
-    email = credentials['email']
-    password = credentials['password']
+    clear()
+    if not email and not password:
+        credentials = [
+            inquirer.Text("email", message="Please enter your email > "),
+            inquirer.Password("password", message="Please enter your password > "),
+        ]
+
+        credentials = inquirer.prompt(credentials)
+        if not credentials:
+            exit()
+        email = credentials['email']
+        password = credentials['password']
     data = {'email': email, 'password': password}
-    request = Requester("POST",LOGIN_URL,data=data)
-    status,response = request.get_response
+    request = Requester("POST", LOGIN_URL, data=data)
+    status, response = request.get_response
     if status:
         token = response.json().get("token",None)
         Adapter.save_token(token=token, email=email)
@@ -29,6 +31,7 @@ def save_token():
     else:
         print(Fore.RED + " Wrong Credentials")
         exit()
+
 
 def del_token():
     clear()
