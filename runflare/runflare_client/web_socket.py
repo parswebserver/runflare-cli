@@ -7,16 +7,18 @@ import websockets
 from runflare.settings import WEBSOCKET_URL
 from runflare.runflare_client.data_manager.adapter import Adapter
 from runflare.utils import clear
+import time
 class Socket:
 
     async def watch(self,url,id):
         clear()
         print(Style.BRIGHT + "Intialize Secure Session")
         url = WEBSOCKET_URL + "/ws/{}/{}/?token={}".format(url,id, self._get_token())
+        time.sleep(5)
         try:
             ssl_context = ssl.SSLContext()
             ssl_context.verify_mode = ssl.CERT_NONE
-            # ssl_context.check_hostname = False
+            ssl_context.check_hostname = False
             async with websockets.connect(url,ssl=ssl_context) as ws:
                 print(Fore.GREEN + Style.BRIGHT + "Connected")
                 while True:

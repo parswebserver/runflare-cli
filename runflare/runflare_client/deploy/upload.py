@@ -1,6 +1,7 @@
 from runflare.runflare_client.data_manager.adapter import Adapter
 
 from runflare.runflare_client.requester import Requester
+from runflare import VERSION
 from runflare.settings import UPLOAD_URL, FOLDER_NAME, TAR_NAME, CHANGES_NAME
 from requests_toolbelt.multipart import encoder
 from colorama import Style
@@ -15,7 +16,7 @@ import datetime
 from runflare.utils import clear
 
 def upload(project_root,url,token):
-
+    color = "green"
     with open(project_root + f"/{FOLDER_NAME}/{TAR_NAME}", 'rb') as tar_file:
         file_path = project_root + f"/{FOLDER_NAME}/{TAR_NAME}"
         content_path = os.path.abspath(file_path)
@@ -58,6 +59,7 @@ def upload(project_root,url,token):
                         msg = res.get("message",None)
                         type_res = res.get("type",None)
                         error = res.get("error",None)
+                        color = res.get("color","green")
                         if error:
                             print("ERORR")
                             exit()
@@ -69,10 +71,10 @@ def upload(project_root,url,token):
                             spinner.stop()
                             print(msg)
                 word = ""
+    return color
 
 
-
-def uploader_info(item_id):
+def uploader_info(item_id,any_change=True):
     try:
         operating_system = platform.platform()
     except:
@@ -83,7 +85,9 @@ def uploader_info(item_id):
         device_name = None
     data = {
         "operating_system" : operating_system,
-        "device_name" : device_name
+        "device_name" : device_name,
+        "cli_version" : VERSION,
+        "any_change" : any_change,
     }
     request = Requester("POST", UPLOAD_URL.format(item_id),data=data)
     return request.get_response

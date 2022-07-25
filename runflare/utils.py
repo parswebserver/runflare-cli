@@ -32,10 +32,12 @@ def get_text_hash(text):
 
 
 
-def save_current_dir(root_path,spec):
+def save_current_dir(root_path,spec,send_all_files=False):
     conn = Adapter.create_connection(root_path + f"/{FOLDER_NAME}/",DATASTORE.get("NAME"))
     Adapter.drop_table(conn,"Current_Dir")
     Adapter.create_table(conn,"Current_Dir", path="VARCHAR(255)",type="VARCHAR(255)",sha="VARCHAR(255)",path2="VARCHAR(255)")
+    if send_all_files:
+        Adapter.drop_table(conn, "last_deploy")
     for path, subdirs, files in os.walk(root_path):
         matches = spec.match_files(subdirs)
         for pattern_matched in matches:
@@ -65,11 +67,11 @@ def save_current_dir(root_path,spec):
 
 
 
-def compare(project_root):
+def compare(project_root,send_all_files=False):
     ignore_path = get_ignore_path(project_root)
     fh = open(ignore_path, 'r')
     spec = pathspec.PathSpec.from_lines('gitwildmatch', fh)
-    file_number = save_current_dir(project_root,spec)
+    file_number = save_current_dir(project_root,spec,send_all_files)
     new,change,delete = Adapter.compare(project_root + f"/{FOLDER_NAME}/")
     tmp = copy.copy(delete)
     items = [x[0] for x in delete]
