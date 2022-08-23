@@ -4,7 +4,7 @@ from runflare.runflare_client.requester import Requester
 from runflare import VERSION
 from runflare.settings import UPLOAD_URL, FOLDER_NAME, TAR_NAME, CHANGES_NAME
 from requests_toolbelt.multipart import encoder
-from colorama import Style
+from colorama import Fore, Style
 from halo import Halo
 import requests
 import os
@@ -47,34 +47,52 @@ def upload(project_root,url,token):
                 transfered += len(data)
             space = 70 * ' '
             print_the_box(f'\r √  Uploaded ({speed} Mbp/s){space}\n')
+        try:
+            r = requests.post(url,headers=headers,stream=True, data=read_in_chunks(tar_file, CHUNK_SIZE))
+        except requests.exceptions.ConnectionError as e:
+            print(Fore.RED + Style.BRIGHT + f"\n\n X  ERORR - Connection Closed, You may have another in progress deploy")
+            exit()
 
-        r = requests.post(url,headers=headers,stream=True, data=read_in_chunks(tar_file, CHUNK_SIZE))
+
         word = ""
-        for letter in r.iter_content(1, decode_unicode=True):
-            if letter != ";":
-                word += letter
-            else:
-                if word.startswith("{") and word.endswith("}"):
-                        res = json.loads(word)
-                        msg = res.get("message",None)
-                        type_res = res.get("type",None)
-                        error = res.get("error",None)
-                        color = res.get("color","green")
-                        if error:
-                            print("ERORR")
-                            exit()
-                        start = True if type_res == "start" else False
-                        if start:
-                            spinner = Halo(msg, color="magenta")
-                            spinner.start()
-                        else:
-                            spinner.stop()
-                            print(msg)
-                word = ""
+        try:
+            for letter in r.iter_content(1, decode_unicode=True):
+                if letter != ";":
+                    word += letter
+                else:
+
+                    if word.startswith("{") and word.endswith("}"):
+                            res = json.loads(word)
+                            msg = res.get("message",None)
+                            type_res = res.get("type",None)
+                            error = res.get("error",None)
+                            color = res.get("color","green")
+                            if error:
+                                print(Fore.RED + Style.BRIGHT + f"\n X  ERORR - {msg}")
+                                exit()
+                            start = True if type_res == "start" else False
+                            if start:
+                                spinner = Halo(msg, color="magenta")
+                                spinner.start()
+                            else:
+                                spinner.stop()
+                                print(msg)
+                    word = ""
+        except json.decoder.JSONDecodeError as e:
+            print(word)
+            exit()
+        except requests.exceptions.ChunkedEncodingError as e:
+            print(Fore.RED + Style.BRIGHT + f"\n X  ERORR - Connection Closed, Please Deploy Again")
+            exit()
+        except Exception as e:
+            print(type(e))
+            print(e)
+            exit()
+
     return color
 
 
-def uploader_info(item_id,any_change=True):
+def uploader_info(item_id,any_change=True,spinner=None):
     try:
         operating_system = platform.platform()
     except:
@@ -89,9 +107,10 @@ def uploader_info(item_id,any_change=True):
         "cli_version" : VERSION,
         "any_change" : any_change,
     }
-    request = Requester("POST", UPLOAD_URL.format(item_id),data=data)
+    request = Requester("POST", UPLOAD_URL.format(item_id), data=data, spinner=spinner)
     return request.get_response
 
-def pre_upload_check(url,token):
-    request = Requester("GET", url, headers={'token':token},abs=True)
+
+def pre_upload_check(url, token):
+    request = Requester("GET", url, headers={'token': token}, abs=True)
     return request.get_response

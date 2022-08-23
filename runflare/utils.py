@@ -40,6 +40,7 @@ def save_current_dir(root_path,spec,send_all_files=False):
         Adapter.drop_table(conn, "last_deploy")
     for path, subdirs, files in os.walk(root_path):
         matches = spec.match_files(subdirs)
+
         for pattern_matched in matches:
             subdirs.remove(pattern_matched)
         matches = spec.match_files(files)
