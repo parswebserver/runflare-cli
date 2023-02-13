@@ -54,6 +54,15 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
         restart_value = response.json().get("restart")
         log_identifier = response.json().get("log_identifier")
         send_all_files = response.json().get("send_all_files")
+        application_type = response.json().get("application_type")
+        if send_all_files and 'Docker' in application_type:
+            dockerfile_exists = False
+            for new_files in new:
+                if './Dockerfile' in new_files:
+                    dockerfile_exists = True
+            if not dockerfile_exists:
+                print(Fore.RED + "Your project has no Dockerfile !")
+                exit()
         if send_all_files:
             sp = Halo(text=Style.BRIGHT + f"Scaning All Directory {project_root}", color="magenta")
         else:
