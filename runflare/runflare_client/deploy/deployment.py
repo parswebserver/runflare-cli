@@ -3,6 +3,7 @@ import os
 import shutil
 from time import sleep
 from runflare import inquirer
+import requests
 
 from runflare.runflare_client.requester import Requester
 
@@ -15,7 +16,7 @@ from .cache import Cache_Manager
 from .upload import upload, pre_upload_check, uploader_info
 import platform
 from runflare.runflare_client.service.manage import restart
-from ...settings import FOLDER_NAME, TAR_NAME, CHANGES_NAME, MAX_TRY, USER_HOME_PATH, RESTART_URL, LOG_URL
+from ...settings import FOLDER_NAME, TAR_NAME, CHANGES_NAME, MAX_TRY, USER_HOME_PATH, RESTART_URL, LOG_URL, BASE_URL
 import sys
 from halo import Halo
 
@@ -55,14 +56,11 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
         log_identifier = response.json().get("log_identifier")
         send_all_files = response.json().get("send_all_files")
         application_type = response.json().get("application_type")
-        if send_all_files and 'Docker' in application_type:
-            dockerfile_exists = False
-            for new_files in new:
-                if './Dockerfile' in new_files:
-                    dockerfile_exists = True
-            if not dockerfile_exists:
-                print(Fore.RED + "Your project has no Dockerfile !")
-                exit()
+        SECRET_KEY = response.json().get("SECRET_KEY")
+        namespace = response.json().get("namespace")
+        item_name = response.json().get("item_name")
+        version_code = response.json().get("version_code")
+
         if send_all_files:
             sp = Halo(text=Style.BRIGHT + f"Scaning All Directory {project_root}", color="magenta")
         else:
@@ -70,6 +68,24 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
         sp.start()
         new, changed, deleted, scaned_files = compare(project_root,send_all_files=send_all_files)
         sp.stop()
+        if send_all_files and 'Docker' in application_type:
+            dockerfile_exists = False
+            for new_files in new:
+                if './Dockerfile' in new_files:
+                    dockerfile_exists = True
+                    break
+            if not dockerfile_exists:
+                data = {
+                    "secret_key": SECRET_KEY,
+                    "version_code": version_code,
+                    "namespace": namespace,
+                    "item_name": item_name,
+                    "error_image": version_code,
+                }
+                url = f"{BASE_URL}/project/deploy/log-as-error/"
+                r = requests.post(url=url,data=data)
+                print(Fore.RED + "Your project has no Dockerfile !")
+                exit()
         space = " " * len(project_root)
         sys.stdout.write(f"\r √  Scaned {scaned_files} item(s)    {space}\n")
 
@@ -191,3 +207,4 @@ def reset_all():
         print(Fore.GREEN + "Successfully Cleaned")
     else:
         print(Fore.RED + "Choose Carefully")
+
