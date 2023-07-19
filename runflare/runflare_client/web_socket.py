@@ -14,7 +14,7 @@ class Socket:
         clear()
         print(Style.BRIGHT + "Intialize Secure Session")
         url = WEBSOCKET_URL + "/ws/{}/{}/?token={}".format(url,id, self._get_token())
-        time.sleep(5)
+        time.sleep(6)
         try:
             ssl_context = ssl.SSLContext()
             ssl_context.verify_mode = ssl.CERT_NONE

@@ -79,7 +79,7 @@ class RunFlare():
 For More Help Enter
     runflare COMMAND help    
     
-        """.format(bold_stop=Style.RESET_ALL,bold_start=Style.BRIGHT,VERSION=VERSION)
+        """.format(bold_stop=Style.RESET_ALL, bold_start=Style.BRIGHT, VERSION=VERSION)
 
     def help(self):
         """for more help"""
@@ -204,13 +204,20 @@ For More Help Enter
 
 def run():
     clear()
-    checker = Version.has_new_version()
+    checker = Version.check_version()
     if checker:
+        if checker == 3:
+            print("""                     ╭──────────────────────────────────────╮
+                     │    Old Version, Please Update CLI    │
+                     │ Run `pip install --upgrade runflare` │
+                     ╰──────────────────────────────────────╯""")
+            exit()
+
         try:
             fire.Fire(RunFlare)
         except KeyError:
             raise SystemExit
-        if checker == 2:
+        if checker in [2,3]:
             print()
             print("""                     ╭──────────────────────────────────────╮
                      │           Update available           │

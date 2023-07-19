@@ -8,7 +8,6 @@ from colorama import Fore, Style
 
 
 def save_token(email=None,password=None):
-
     clear()
     if not email and not password:
         credentials = [
@@ -31,7 +30,6 @@ def save_token(email=None,password=None):
     else:
         print(Fore.RED + " Wrong Credentials")
         exit()
-
 
 def del_token():
     clear()

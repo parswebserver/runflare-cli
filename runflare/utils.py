@@ -165,3 +165,12 @@ def get_ignore_path(project_root):
                 if item not in lst:
                     default_ignored.write(f"\n{item}")
     return full_path
+
+def check_required_files(required_files):
+    not_exists = []
+    for f in required_files:
+        if not os.path.exists(f):
+            not_exists.append(f)
+    if not_exists:
+        return False, not_exists
+    return True, []

@@ -23,7 +23,7 @@ setup(
         'readchar==2.0.1',
         'python-editor==1.0.4',
         'pytz==2021.3',
-        'regex==2021.10.8',
+        'regex==2023.6.3',
         'requests==2.26.0',
         'requests-toolbelt==0.9.1',
         'six==1.16.0',

@@ -82,10 +82,10 @@ class Version:
             print(Fore.RED + f"\nRunflare Is Under Maintance, Please Try Again Later")
             exit()
         elif request.status_code != 200:
-            return Version("0")
+            return Version("0"), None
         ok,response = request.ok,request.json()
         if ok:
-            return Version(response.get("version"))
+            return Version(response.get("version")),Version(response.get("minimum_version"))
         else:
             return Version.get_current_version()
 
@@ -96,12 +96,14 @@ class Version:
 
     @staticmethod
     @Halo(text=Style.BRIGHT + "Preparing ...", color="magenta")
-    def has_new_version():
+    def check_version():
         current_version = Version.get_current_version()
-        latest_version = Version.get_latest_version()
+        latest_version, minimum_version = Version.get_latest_version()
         if latest_version == Version("0"):
             return 0
-        if latest_version > current_version:
+        if minimum_version > current_version:
+            return 3
+        elif latest_version > current_version:
             return 2
         else:
             return 1

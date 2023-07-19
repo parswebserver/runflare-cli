@@ -1,9 +1,10 @@
 import platform
 from pathlib import Path
 
-
+#
 BASE_URL = "https://api.runflare.com"
 WEBSOCKET_URL = 'wss://api.runflare.com'
+
 FOLDER_NAME = ".cloud"
 DATASTORE = {
     "BACKEND": "sqlite3",
@@ -11,10 +12,8 @@ DATASTORE = {
 }
 TAR_NAME = "workspace.tar.gz"
 CHANGES_NAME = "changes.json"
-
 LOGIN_URL = '/account/login/'
-PROJECT_LIST_URL = '/project/?filter=ACTIVE'
-ITEM_LIST_URL = '/project/items-show/{}/'
+PROJECT_LIST_URL = '/api/v1/projects/cli/'
 UPLOAD_URL = "/project/deploy/{}/"
 START_URL = "/project/deployment-start/{}/"
 STOP_URL = "/project/deployment-stop/{}/"
@@ -27,7 +26,6 @@ NR_EVENTS_URL = '/project/events/{}/'
 
 
 DOC_URL = 'https://runflare.com/docs/get-started/'
-
 MAX_TRY = 3
 
 LOG_URL = "pod-log"

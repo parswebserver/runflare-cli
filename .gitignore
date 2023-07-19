@@ -1,2 +1,7 @@
 /dist
 /runflare.egg-info/
+/.cloud/
+.cloud/
+/.cloud
+__pycache__/
+.idea/

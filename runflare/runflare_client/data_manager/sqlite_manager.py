@@ -86,7 +86,7 @@ class Sqllite_Manager(Data_Manager):
         self.conn = self.create_connection(self.main_db_path,self.db_name)
         self.cursor = self.conn.cursor()
         self.create_table(self.conn,"Token", token="VARCHAR(255)", email="VARCHAR(255)")
-        self.insert_into(self.conn,"Token",token=token, email=email)
+        self.insert_into(self.conn,"Token", token=token, email=email)
         self.close_connection(self.conn)
 
     def del_token(self):

@@ -1,9 +1,9 @@
 from runflare import inquirer
 from runflare.runflare_client.data_manager.adapter import Adapter
-from runflare.runflare_client.service.projects import get_projects, get_project_items
+from runflare.runflare_client.service.projects import get_projects
 from runflare.settings import FOLDER_NAME,DOC_URL
 from colorama import init,Fore,Style
-from runflare.utils import clear
+from runflare.utils import clear, check_required_files
 
 
 class Cache_Manager:
@@ -75,6 +75,7 @@ class Cache_Manager:
 
 
     def update_item(self,data):
+        print(data)
         status, response = get_project_items(data[1])
         if status:
             items = response.json()
@@ -140,10 +141,10 @@ class Cache_Manager:
         return data[0], data[1], selected_service, selected_service_id
 
     def update_cache(self,email=None,password=None,namespace=None,app=None):
-
+        required_files = []
         status, response = get_projects(email=email,password=password)
         if status:
-            projects = response.json().get("projects",[])
+            projects = response.json()
         else:
             return Fore.RED + response
 
@@ -173,15 +174,10 @@ class Cache_Manager:
         for project in projects:
             if project["namespace"] == selected_project:
                 selected_project_id = project["id"]
-                status, response = get_project_items(selected_project_id)
-                if status:
-                    items = response.json()
-                    service = items.get("service", [])
-                    if self.type != "Deploy":
-                        database = items.get("database", [])
-
-                else:
-                    return response
+                items = project.get("items")
+                service = items.get("service", [])
+                if self.type != "Deploy":
+                    database = items.get("database", [])
 
         if self.type != "Watch Events":
 
@@ -207,13 +203,14 @@ class Cache_Manager:
                         if item.get("status") != "ACTIVE":
                             not_active.append(item["name"])
                         choices.append(item["name"])
-                        item_info[item["name"]] = item["id"]
+                        item_info[item["name"]] = {}
+                        item_info[item["name"]]["id"] = item["id"]
+                        item_info[item["name"]]["required_files"] = item["required_files"]
 
                 else:
                     print(Fore.RED + "Selected Project doesn't have any `Service`")
                     print(Fore.RED + f"For more help please visit {DOC_URL}")
                     exit()
-
 
             elif selected_item_type == "Database":
                 if database:
@@ -244,14 +241,23 @@ class Cache_Manager:
                     print(Fore.RED + f"For more help please visit {DOC_URL}")
                     exit()
 
-
             else:
                 selected_service = app
-            selected_service_id = item_info[selected_service]
+            selected_service_id = item_info[selected_service].get("id")
+            required_files = item_info[selected_service].get("required_files")
         else:
             selected_service = None
             selected_service_id = None
-        self.save_cache(selected_project,selected_project_id,selected_service,selected_service_id)
-        return selected_project,selected_project_id,selected_service,selected_service_id
+
+        ok, files = check_required_files(required_files)
+
+        if not ok:
+            print(Fore.RED + f"For Your App You Must Have These Files/Directory!")
+            for f in files:
+                print(Fore.RED + f"  {f}")
+            exit()
+
+        self.save_cache(selected_project, selected_project_id, selected_service, selected_service_id)
+        return selected_project, selected_project_id, selected_service, selected_service_id
 
 

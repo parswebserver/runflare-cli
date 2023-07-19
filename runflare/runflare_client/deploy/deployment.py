@@ -9,14 +9,14 @@ from runflare.runflare_client.requester import Requester
 
 from runflare.runflare_client.data_manager.adapter import Adapter
 from pprint import pprint
-from runflare.runflare_client.service.projects import get_projects, get_project_items
+from runflare.runflare_client.service.projects import get_projects
 from colorama import Fore, Style, init
 from runflare.utils import clear, compare, make_tar, list_to_dict, makedirs
 from .cache import Cache_Manager
 from .upload import upload, pre_upload_check, uploader_info
 import platform
 from runflare.runflare_client.service.manage import restart
-from ...settings import FOLDER_NAME, TAR_NAME, CHANGES_NAME, MAX_TRY, USER_HOME_PATH, RESTART_URL, LOG_URL, BASE_URL
+from ...settings import FOLDER_NAME, TAR_NAME, CHANGES_NAME, MAX_TRY, USER_HOME_PATH, LOG_URL
 import sys
 from halo import Halo
 
@@ -35,31 +35,26 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
         try_num = 1
         sp = Halo(text=Style.BRIGHT + f"Checking Upload Conditions", color="magenta")
         sp.start()
-        # while try_num <= MAX_TRY:
-        while try_num <= 1:
-            status, response = uploader_info(selected_service_id,any_change=any_change, spinner=sp)
+        while try_num <= MAX_TRY:
+            status, response = uploader_info(selected_service_id, any_change=any_change, spinner=sp)
             if "401" in response:
                 return "\n" + Fore.RED + response
             if status:
                 break
             try_num += 1
-            # sleep(2)
+            sleep(2)
         if not status:
             return "\n" + Fore.RED + response
         sp.stop()
         sys.stdout.write(f"\r √  Upload Conditions Verified\n")
 
         url = response.json().get("url")
+        url_mirror = response.json().get("url_mirror")
         token = response.json().get("token")
         free_disk = response.json().get("free_disk")
         restart_value = response.json().get("restart")
         log_identifier = response.json().get("log_identifier")
         send_all_files = response.json().get("send_all_files")
-        application_type = response.json().get("application_type")
-        SECRET_KEY = response.json().get("SECRET_KEY")
-        namespace = response.json().get("namespace")
-        item_name = response.json().get("item_name")
-        version_code = response.json().get("version_code")
 
         if send_all_files:
             sp = Halo(text=Style.BRIGHT + f"Scaning All Directory {project_root}", color="magenta")
@@ -68,24 +63,6 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
         sp.start()
         new, changed, deleted, scaned_files = compare(project_root,send_all_files=send_all_files)
         sp.stop()
-        if send_all_files and 'Docker' in application_type:
-            dockerfile_exists = False
-            for new_files in new:
-                if './Dockerfile' in new_files:
-                    dockerfile_exists = True
-                    break
-            if not dockerfile_exists:
-                data = {
-                    "secret_key": SECRET_KEY,
-                    "version_code": version_code,
-                    "namespace": namespace,
-                    "item_name": item_name,
-                    "error_image": version_code,
-                }
-                url = f"{BASE_URL}/project/deploy/log-as-error/"
-                r = requests.post(url=url,data=data)
-                print(Fore.RED + "Your project has no Dockerfile !")
-                exit()
         space = " " * len(project_root)
         sys.stdout.write(f"\r √  Scaned {scaned_files} item(s)    {space}\n")
 
@@ -94,40 +71,53 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
             print(Fore.RED + "No New Files\nDirectory already synced with server !")
             exit()
 
+        compressed = False
+        for uploader_url in [url, url_mirror]:
 
-        status, response = pre_upload_check(url, token)
-        if not status:
-            return Fore.RED + response
+            if not uploader_url:
+                continue
 
-        makedirs(project_root + f"/{FOLDER_NAME}/")
-        changes_file_path = project_root + f"/{FOLDER_NAME}/{CHANGES_NAME}"
-        with open(changes_file_path, "w+") as changes:
-            changes.write(json.dumps({
-                "new": list_to_dict(new),
-                "count_of_new": len(new),
-                "modify": list_to_dict(changed),
-                "count_of_modify": len(changed),
-                "delete": list_to_dict(deleted),
-                "count_of_delete": len(deleted),
-                "log_identifier": log_identifier,
-            }, indent=4))
-        number_of_files = len(changed) + len(new)
-        sp = Halo(text=Style.BRIGHT + f"Compressing 0 of {number_of_files} item(s)", color="magenta")
-        sp.start()
-        i = 0
-        for i in make_tar(project_root, changed, new, changes_file_path=changes_file_path):
-            sp.text = (Style.BRIGHT + f"Compressing {str(i)} of {number_of_files} items")
-        sp.stop()
-        space = " " * len(str(number_of_files) + str(i))
-        sys.stdout.write(f"\r √  {number_of_files} item(s) Compressed  {space}\n")
+            status, response = pre_upload_check(uploader_url, token)
+            if not status:
+                return Fore.RED + response
 
-        size = os.path.getsize(project_root + f"/{FOLDER_NAME}/{TAR_NAME}") / 1048576
-        if free_disk < size:
-            print(Fore.RED + Style.BRIGHT + "Not Enough Disk,Please Upgrade Your Plan")
-            exit()
-        color = upload(project_root, url, token)
+            if not compressed:
+                makedirs(project_root + f"/{FOLDER_NAME}/")
+                changes_file_path = project_root + f"/{FOLDER_NAME}/{CHANGES_NAME}"
+                with open(changes_file_path, "w+") as changes:
+                    changes.write(json.dumps({
+                        "new": list_to_dict(new),
+                        "count_of_new": len(new),
+                        "modify": list_to_dict(changed),
+                        "count_of_modify": len(changed),
+                        "delete": list_to_dict(deleted),
+                        "count_of_delete": len(deleted),
+                        "log_identifier": log_identifier,
+                    }, indent=4))
+                number_of_files = len(changed) + len(new)
+                sp = Halo(text=Style.BRIGHT + f"Compressing 0 of {number_of_files} item(s)", color="magenta")
+                sp.start()
+                i = 0
+                for i in make_tar(project_root, changed, new, changes_file_path=changes_file_path):
+                    sp.text = (Style.BRIGHT + f"Compressing {str(i)} of {number_of_files} items")
+                sp.stop()
+                space = " " * len(str(number_of_files) + str(i))
+                sys.stdout.write(f"\r √  {number_of_files} item(s) Compressed  {space}\n")
 
-        color = Fore.GREEN if color == "green" else Fore.RED
+                size = os.path.getsize(project_root + f"/{FOLDER_NAME}/{TAR_NAME}") / 1048576
+                if free_disk < size:
+                    print(Fore.RED + Style.BRIGHT + "Not Enough Disk,Please Upgrade Your Plan")
+                    exit()
+                compressed = True
+
+            color = upload(project_root, uploader_url, token)
+
+            if color == "green":
+                color = Fore.GREEN
+                break
+            else:
+                color = Fore.RED
+
         if status:
             Adapter.save_last_deploy(project_root + f"/{FOLDER_NAME}/")
             os.remove(project_root + f"/{FOLDER_NAME}/{TAR_NAME}")
@@ -149,6 +139,12 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
                     answer = questions["log"]
                     if answer:
                         from runflare.runflare_client.web_socket import Socket
+                        print("Your Files Successfully uploaded To Server.")
+                        sleep(6)
+                        print("New Version will be replaced soon ...")
+                        sleep(6)
+                        print("Trying to watch logs ...")
+                        sleep(6)
                         Socket().run_loop("watch", LOG_URL, data[3])
             return
         else:
