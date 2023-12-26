@@ -35,6 +35,7 @@ setup(
         'wcwidth==0.2.5',
         'websockets==10.0',
         'pathspec==0.9.0',
+        'setuptools==69.0.3',
     ],
     author_email='parswebserver@gmail.com',
     url='https://github.com/parswebserver/runflare-cli',

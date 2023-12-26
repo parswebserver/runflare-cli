@@ -2,7 +2,7 @@ from runflare.runflare_client.data_manager.adapter import Adapter
 
 from runflare.runflare_client.requester import Requester
 from runflare import VERSION
-from runflare.settings import UPLOAD_URL, FOLDER_NAME, TAR_NAME, CHANGES_NAME
+from runflare.settings import UPLOAD_URL, FOLDER_NAME, TAR_NAME, CHANGES_NAME,CANCEL_DEPLOY_URL
 from requests_toolbelt.multipart import encoder
 from colorama import Fore, Style
 from halo import Halo
@@ -114,3 +114,11 @@ def uploader_info(item_id,any_change=True,spinner=None):
 def pre_upload_check(url, token):
     request = Requester("GET", url, headers={'token': token}, abs=True)
     return request.get_response
+
+def cancel_deploy(data):
+    for _ in range(3):
+        try:
+            request = Requester("POST", CANCEL_DEPLOY_URL, data=data)
+            return request.get_response
+        except:
+            continue

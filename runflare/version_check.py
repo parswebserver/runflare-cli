@@ -76,7 +76,7 @@ class Version:
         try:
             request = requests.request("GET", BASE_URL + VERSION_URL)
         except:
-            return Version("0")
+            return Version("0"), None
         if request.status_code == 503:
             clear()
             print(Fore.RED + f"\nRunflare Is Under Maintance, Please Try Again Later")

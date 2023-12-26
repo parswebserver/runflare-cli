@@ -1,9 +1,8 @@
 import platform
 from pathlib import Path
 
-#
-BASE_URL = "https://api.runflare.com"
 WEBSOCKET_URL = 'wss://api.runflare.com'
+BASE_URL = "https://api.runflare.com"
 
 FOLDER_NAME = ".cloud"
 DATASTORE = {
@@ -19,6 +18,7 @@ START_URL = "/project/deployment-start/{}/"
 STOP_URL = "/project/deployment-stop/{}/"
 RESTART_URL = "/project/deployment-restart/{}/"
 VERSION_URL = "/version/"
+CANCEL_DEPLOY_URL = "/project/deploy/cancel/"
 
 
 NR_LOG_URL = "/project/pod-log/{}/"
