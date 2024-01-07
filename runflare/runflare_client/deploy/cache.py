@@ -237,9 +237,10 @@ class Cache_Manager:
                 selected_service = answer["service"]
 
                 if selected_service in not_active:
-                    print(Fore.RED + f"{selected_service} is not active")
-                    print(Fore.RED + f"For more help please visit {DOC_URL}")
-                    exit()
+                    if self.type != "Deploy":
+                        print(Fore.RED + f"{selected_service} is not active")
+                        print(Fore.RED + f"For more help please visit {DOC_URL}")
+                        exit()
 
             else:
                 selected_service = app
