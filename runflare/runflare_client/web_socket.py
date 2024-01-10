@@ -13,7 +13,7 @@ from runflare.utils import clear
 import time
 class Socket:
 
-    async def watch(self,url,id):
+    async def watch(self,url,id,image_id=None):
 
         if url == "client-stream":
             socket_url = WEBSOCKET_URL + "/ws/{}/?token={}".format(url, self._get_token())
@@ -33,7 +33,8 @@ class Socket:
                     inp = {
                         "required_type": "k8s_deploy_log",
                         "item_id": id,
-                        "image_id": "latest",
+                        "image_id": image_id,
+                        "client": "cli",
                     }
                     d = json.dumps(inp)
                     await ws.send(d)
@@ -50,7 +51,9 @@ class Socket:
                                 sys.stdout.write(data)
                             elif t == "k8s_image_status":
                                 status = data.get("status")
-                                return "green" if status=="CP" else "red"
+                                chagned_status_image_id = data.get("image_id")
+                                if image_id == chagned_status_image_id:
+                                    return "green" if status=="CP" else "red"
                         else:
                             print(msg)
         except Exception as e:
@@ -102,14 +105,14 @@ class Socket:
             print(Fore.RED + Style.BRIGHT + "Send Ticket To Runflare Support")
             exit()
 
-    def run_loop(self,type,url,id=None,cancelable=False,log_identifier=False):
+    def run_loop(self,type,url,id=None,cancelable=False,log_identifier=False,image_id=None):
         try:
             if type == "watch":
-                res = asyncio.get_event_loop().run_until_complete(self.watch(url,id))
+                res = asyncio.get_event_loop().run_until_complete(self.watch(url,id,image_id))
                 if res == "401-unauthorized":
                     from runflare.runflare_client.account import save_token
                     save_token()
-                    asyncio.get_event_loop().run_until_complete(self.watch(url, id))
+                    asyncio.get_event_loop().run_until_complete(self.watch(url, id,image_id))
             elif type == "interactive":
                 asyncio.get_event_loop().run_until_complete(self.interactive(url, id))
         except KeyboardInterrupt:

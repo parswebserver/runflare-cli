@@ -36,9 +36,11 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
         sp = Halo(text=Style.BRIGHT + f"Checking Upload Conditions", color="magenta")
         sp.start()
         has_another_deploy = False
-
+        image_id = 0
         while try_num <= MAX_TRY:
             status, response = uploader_info(selected_service_id, any_change=any_change, spinner=sp)
+            if not status:
+                response = response.json().get("message")
             if "Another Deploy is In Progress" in response:
                 has_another_deploy = True
                 break
@@ -48,7 +50,6 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
                 break
             try_num += 1
             sleep(2)
-
         if not has_another_deploy and not status:
             return "\n" + Fore.RED + response
         sp.stop()
@@ -62,6 +63,7 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
             restart_value = response.json().get("restart")
             log_identifier = response.json().get("log_identifier")
             send_all_files = response.json().get("send_all_files")
+            image_id = response.json().get("image_id")
 
             if send_all_files:
                 sp = Halo(text=Style.BRIGHT + f"Scaning All Directory {project_root}", color="magenta")
@@ -129,7 +131,7 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
             print(f"\n{Fore.RED} Another Deploy is In progress you are watching its logs!\n")
 
         from runflare.runflare_client.web_socket import Socket
-        Socket().run_loop("watch", "client-stream", id=data[3],cancelable=True,log_identifier=log_identifier)
+        Socket().run_loop("watch", "client-stream", id=data[3],cancelable=True,log_identifier=log_identifier,image_id=image_id)
 
         if has_another_deploy:
             return Fore.GREEN + ""

@@ -6,11 +6,12 @@ from runflare import inquirer
 
 class Requester:
 
-    def __init__(self,method,path,spinner=None,abs=False,extra=None,**kwargs):
+    def __init__(self,method,path,spinner=None,abs=False,extra=None,return_extra_response=False,**kwargs):
 
         assert method in ["HEAD", "GET", "POST", "PATCH", "PUT", "DELETE"],(f"{path} method is not allowed")
         assert path is not None,("Enter a valid Path")
         self.method = method
+        self.return_extra_response = return_extra_response
         if not "headers" in kwargs:
             kwargs["headers"] = {}
         kwargs["headers"]["Authorization"] = f"Token {self._get_token()}"
@@ -69,6 +70,8 @@ class Requester:
         if isinstance(self.json_data,dict):
             self.error_code = self.json_data.get("error",0)
             if self.error_code:
+                if self.return_extra_response:
+                    return False, self.response
                 return False, self.json_data.get("message")
         return True,self.response
 

@@ -107,7 +107,8 @@ def uploader_info(item_id,any_change=True,spinner=None):
         "cli_version" : VERSION,
         "any_change" : any_change,
     }
-    request = Requester("POST", UPLOAD_URL.format(item_id), data=data, spinner=spinner)
+    request = Requester("POST", UPLOAD_URL.format(item_id), data=data, spinner=spinner,return_extra_response=True)
+
     return request.get_response
 
 
