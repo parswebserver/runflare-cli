@@ -47,7 +47,10 @@ class Cache_Manager:
             else:
                 pass
         if status:
-            self.selected_project,self.selected_project_id, self.selected_item, self.selected_item_id = data
+            try:
+                self.selected_project,self.selected_project_id, self.selected_item, self.selected_item_id = data
+            except:
+                self.selected_project,self.selected_project_id = data
             if not y:
                 if self.type == "Watch Events":
                     questions = [
@@ -75,8 +78,7 @@ class Cache_Manager:
 
 
     def update_item(self,data):
-        print(data)
-        status, response = get_project_items(data[1])
+        status, response = get_projects(data[1])
         if status:
             items = response.json()
             service = items.get("service", [])
