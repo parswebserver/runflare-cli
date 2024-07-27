@@ -16,12 +16,12 @@ class Socket:
     async def watch(self,url,id,image_id=None):
 
         if url == "client-stream":
-            socket_url = WEBSOCKET_URL + "/ws/{}/?token={}".format(url, self._get_token())
+            socket_url = WEBSOCKET_URL + "/{}/?token={}".format(url, self._get_token())
         else:
             clear()
             print(Style.BRIGHT + "Initialize Secure Session")
             time.sleep(6)
-            socket_url = WEBSOCKET_URL + "/ws/{}/{}/?token={}".format(url,id, self._get_token())
+            socket_url = WEBSOCKET_URL + "/{}/{}/?token={}".format(url,id, self._get_token())
         try:
             ssl_context = ssl.SSLContext()
             ssl_context.verify_mode = ssl.CERT_NONE
@@ -66,7 +66,7 @@ class Socket:
 
     async def interactive(self, url,id):
         print(Style.BRIGHT + "Initialize Secure Session")
-        url = WEBSOCKET_URL + "/ws/{}/{}/?token={}".format(url,id, self._get_token())
+        url = WEBSOCKET_URL + "/{}/{}/?token={}".format(url,id, self._get_token())
         try:
             ssl_context = ssl.SSLContext()
             ssl_context.verify_mode = ssl.CERT_NONE

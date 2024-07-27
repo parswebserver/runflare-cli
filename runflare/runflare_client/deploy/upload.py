@@ -92,7 +92,7 @@ def upload(project_root,url,token):
     return color
 
 
-def uploader_info(item_id,any_change=True,spinner=None):
+def uploader_info(project_id,item_id,any_change=True,spinner=None):
     try:
         operating_system = platform.platform()
     except:
@@ -107,7 +107,7 @@ def uploader_info(item_id,any_change=True,spinner=None):
         "cli_version" : VERSION,
         "any_change" : any_change,
     }
-    request = Requester("POST", UPLOAD_URL.format(item_id), data=data, spinner=spinner,return_extra_response=True)
+    request = Requester("POST", UPLOAD_URL.format(project_id,item_id), data=data, spinner=spinner,return_extra_response=True)
 
     return request.get_response
 

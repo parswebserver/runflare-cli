@@ -16,7 +16,8 @@ def start(y):
     project_root = Adapter.get_project_root()
     cache_object = Cache_Manager(project_root, type="Start")
     data = cache_object.cache(y)
-    request = Requester("PATCH", START_URL.format(data[3]))
+
+    request = Requester("PATCH", START_URL.format(data[1],data[3]))
     status,response = request.get_response
     if status:
         return Fore.GREEN + "Started Successfully"
@@ -29,7 +30,7 @@ def stop(y):
     project_root = Adapter.get_project_root()
     cache_object = Cache_Manager(project_root, type="Stop")
     data = cache_object.cache(y)
-    request = Requester("PATCH", STOP_URL.format(data[3]))
+    request = Requester("PATCH", STOP_URL.format(data[1],data[3]))
     status, response = request.get_response
     if status:
         return Fore.GREEN + "Stoped Successfully"
@@ -42,7 +43,7 @@ def restart(y):
     project_root = Adapter.get_project_root()
     cache_object = Cache_Manager(project_root, type="Restart")
     data = cache_object.cache(y)
-    request = Requester("PATCH", RESTART_URL.format(data[3]))
+    request = Requester("PATCH", RESTART_URL.format(data[1],data[3]))
     status, response = request.get_response
     if status:
         return Fore.GREEN + "Restarted Successfully"

@@ -38,7 +38,7 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
         has_another_deploy = False
         image_id = 0
         while try_num <= MAX_TRY:
-            status, response = uploader_info(selected_service_id, any_change=any_change, spinner=sp)
+            status, response = uploader_info(selected_project,selected_service_id, any_change=any_change, spinner=sp)
             if not status:
                 response = response.json().get("message")
             if "Another Deploy is In Progress" in response:
@@ -120,7 +120,6 @@ def deploy(y,email=None,password=None,namespace=None,app=None):
                     compressed = True
 
                 color = upload(project_root, uploader_url, token)
-                color = "green"
 
                 if color == "green":
                     color = Fore.GREEN
