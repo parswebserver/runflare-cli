@@ -26,7 +26,7 @@ class Socket:
             ssl_context = ssl.SSLContext()
             ssl_context.verify_mode = ssl.CERT_NONE
             ssl_context.check_hostname = False
-            async with websockets.connect(socket_url,ssl=ssl_context) as ws:
+            async with websockets.connect(socket_url,ssl=ssl_context, ping_interval=None) as ws:
                 if url != "client-stream":
                     print(Fore.GREEN + Style.BRIGHT + "Connected")
                 else:
